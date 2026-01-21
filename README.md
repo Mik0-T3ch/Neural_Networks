@@ -5,10 +5,9 @@ En esta área, la neurona básica recibe el nombre de perceptrón el perceptrón
 
 ![Redes Neuronales de Grafos](https://images.squarespace-cdn.com/content/v1/5d0c74548c8e8f0001be73ba/1625093768220-DXWZPDITT3RA2Q77VPOF/Rredes+neuronales+grafos.gif?format=2500w)
 
+<br>
 
-<H2>El perceptron esta inspirado en una neurona biologica</H2>
-
-<img width="710" height="285" alt="image" src="https://github.com/user-attachments/assets/d08d9449-ad16-41ba-b3c7-bbf7f9dd2768" />
+<H1>El perceptron esta inspirado en una neurona biologica</H1>
 
 <H3>La neurona biológica es la unidad fundamental del sistema nervioso y su función principal es recibir, procesar e interpretar información para generar una respuesta. Este proceso ocurre mediante señales electroquímicas que permiten la comunicación entre neuronas y otras células del cuerpo.
 <br>
@@ -20,6 +19,8 @@ El potencial de acción se propaga a lo largo del axón sin perder intensidad ha
 <br>
   <br>
 Este mecanismo de integración de múltiples señales, evaluación mediante un umbral y generación de una salida es la base conceptual que inspira la neurona artificial. En modelos computacionales, este comportamiento se abstrae mediante entradas, pesos y funciones de activación, permitiendo replicar de forma simplificada el funcionamiento de una neurona biológica.</H3>
+
+<img width="710" height="285" alt="image" src="https://github.com/user-attachments/assets/d08d9449-ad16-41ba-b3c7-bbf7f9dd2768" />
 
 <H1>¿Que es un perceptron?</H1>
 
@@ -38,4 +39,6 @@ esperada. Sin embargo, debido a su estructura simple, solo puede resolver
 problemas que son linealmente separables.<H3>
 <br>
 <img width="675" height="320" alt="image" src="https://github.com/user-attachments/assets/96689f40-2d0a-495f-9613-92e4df353dca" />
+
+<H1>Arquitectura del perceptrón monocapa</H1>
 
