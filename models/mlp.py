@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.activations import get_activation
+from utils.activation import get_activation
 from utils.loss import get_loss
 
 
