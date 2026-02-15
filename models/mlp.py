@@ -54,7 +54,7 @@ class MLP:
         self.W2 = rng.normal(0, 0.1, size=(self.n_hidden, self.n_outputs))
         self.b2 = np.zeros((1, self.n_outputs))
 
-    def forward(self, X)
+    def forward(self, X):
         X = np.array(X, dtype=float)
 
         #capa oculta
