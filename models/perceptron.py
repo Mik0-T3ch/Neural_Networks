@@ -1,92 +1,82 @@
 import numpy as np
 
-class Perceptron:
 
+class Perceptron:
     def __init__(self, lr=0.01, epochs=100, bias=True, seed=None, verbose=False):
-        self.lr = lr
-        self.epochs = epochs
-        self.bias = bias
+        self.lr = float(lr)
+        self.epochs = int(epochs)
+        self.bias = bool(bias)
         self.seed = seed
-        self.verbose = verbose
+        self.verbose = bool(verbose)
 
         self.w = None
         self.errors_ = []
 
-    def _asegurar_arrays(self, X, y):
+    def _ensure_arrays(self, X, y=None):
         X = np.array(X, dtype=float)
-        y = np.array(y)
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
 
-        if y.ndim != 1:
-            y = y.reshape(-1)
+        if y is not None:
+            y = np.array(y, dtype=float)
+            if y.ndim != 1:
+                y = y.reshape(-1)
+            return X, y
+        return X
 
-        return X, y
-
-    def _poner_bias(self, X):
+    def _add_bias(self, X):
         if not self.bias:
             return X
-
-        unos = np.ones((X.shape[0], 1))
-        Xb = np.hstack([unos, X])
-        return Xb
+        ones = np.ones((X.shape[0], 1), dtype=float)
+        return np.hstack([ones, X])
 
     def _step(self, z):
-        if isinstance(z, np.ndarray):
-            return (z >= 0).astype(int)
-        else:
-            return 1 if z >= 0 else 0
-        
-    def fit(self, X, y):
-        X, y = self._asegurar_arrays(X, y)
-        Xb = self._poner_bias(X)
+        return np.where(z >= 0.0, 1, 0)
 
-        if set(np.unique(y)) == {-1, 1}:
-            y = (y == 1).astype(int)
+    def fit(self, X, y):
+        X, y = self._ensure_arrays(X, y)
+        Xb = self._add_bias(X)
+
+        unique_labels = np.unique(y)
+        if len(unique_labels) == 2 and set(unique_labels) == {-1, 1}:
+            y = np.where(y == 1, 1, 0)
 
         rng = np.random.default_rng(self.seed)
-        self.w = rng.normal(0, 0.01, Xb.shape[1])
-
+        self.w = rng.normal(0.0, 0.01, size=Xb.shape[1])
         self.errors_ = []
 
-        for epoca in range(self.epochs):
-            errores = 0
-
+        for epoch in range(self.epochs):
+            errors = 0
             for xi, yi in zip(Xb, y):
                 z = np.dot(xi, self.w)
-                y_hat = self._step(z)
-
+                y_hat = 1 if z >= 0.0 else 0
                 error = yi - y_hat
-
                 if error != 0:
-                    ajuste = self.lr * error * xi
-                    self.w = self.w + ajuste
-                    errores += 1
+                    self.w += self.lr * error * xi
+                    errors += 1
 
-            self.errors_.append(errores)
+            self.errors_.append(errors)
 
             if self.verbose:
-                print(f"epoca {epoca+1}/{self.epochs} | errores: {errores}")
+                print(f"Epoca {epoch + 1}/{self.epochs} | Errores: {errors}")
 
-            if errores == 0:
+            if errors == 0:
                 break
 
         return self
 
     def net_input(self, X):
-        X = np.array(X, dtype=float)
-
-        if X.ndim == 1:
-            X = X.reshape(1, -1)
-
-        Xb = self._poner_bias(X)
-        z = Xb @ self.w
-        return z
+        if self.w is None:
+            raise ValueError("El modelo no ha sido entrenado. Llame a fit() primero.")
+        X = self._ensure_arrays(X)
+        Xb = self._add_bias(X)
+        return np.dot(Xb, self.w)
 
     def predict(self, X):
         z = self.net_input(X)
         return self._step(z)
 
     def score(self, X, y):
-        X, y = self._asegurar_arrays(X, y)
+        X, y = self._ensure_arrays(X, y)
         y_pred = self.predict(X)
-        acc = np.mean(y_pred == y)
-        return acc
+        return float(np.mean(y_pred == y))
