@@ -10,7 +10,7 @@ class NeuroLearnNetApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("NeuroLearnNet Studio - Simulador Visual de Redes Neuronales")
-        self.geometry("1100, 680")
+        self.geometry("1100x680")
         self.minsize(900, 580)
         self._setup_theme()
         self._build_tabs()
