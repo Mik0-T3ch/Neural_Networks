@@ -1,17 +1,17 @@
 import numpy as np
-
-from utils.activation import get_activation
-from utils.loss import get_loss
+from utils.activation import get_activation, Sigmoid, Softmax
+from utils.loss import get_loss, BinaryCrossEntropy, CategoricalCrossEntropy
 
 
 class MLP:
     def __init__(
         self,
         n_inputs,
-        n_hidden=8,
+        hidden_layers=(8,),
         n_outputs=1,
         lr=0.1,
         epochs=1000,
+        batch_size=None,
         hidden_activation="tanh",
         output_activation="sigmoid",
         loss="bce",
@@ -19,124 +19,139 @@ class MLP:
         verbose=False,
     ):
         self.n_inputs = int(n_inputs)
-        self.n_hidden = int(n_hidden)
+        if isinstance(hidden_layers, int):
+            self.hidden_layers = [hidden_layers]
+        else:
+            self.hidden_layers = list(hidden_layers)
         self.n_outputs = int(n_outputs)
 
         self.lr = float(lr)
         self.epochs = int(epochs)
+        self.batch_size = batch_size
         self.seed = seed
         self.verbose = bool(verbose)
 
         self.h_act = get_activation(hidden_activation)
         self.o_act = get_activation(output_activation)
-
-        #loss por nombre
         self.loss_fn = get_loss(loss)
 
-        #pesos 
-        self.W1 = None
-        self.b1 = None
-        self.W2 = None
-        self.b2 = None
-
+        self.weights = []
+        self.biases = []
         self.loss_history_ = []
 
-        self._init_params()
+        self._init_parameters()
 
-    def _init_params(self):
+    def _init_parameters(self):
         rng = np.random.default_rng(self.seed)
+        layer_dims = [self.n_inputs] + self.hidden_layers + [self.n_outputs]
 
-        #pesos primera capa
-        self.W1 = rng.normal(0, 0.1, size=(self.n_inputs, self.n_hidden))
-        self.b1 = np.zeros((1, self.n_hidden))
+        self.weights = []
+        self.biases = []
 
-        #pesos salida
-        self.W2 = rng.normal(0, 0.1, size=(self.n_hidden, self.n_outputs))
-        self.b2 = np.zeros((1, self.n_outputs))
+        for i in range(len(layer_dims) - 1):
+            fan_in = layer_dims[i]
+            fan_out = layer_dims[i + 1]
+            limit = np.sqrt(6.0 / (fan_in + fan_out))
+            w = rng.uniform(-limit, limit, size=(fan_in, fan_out))
+            b = np.zeros((1, fan_out), dtype=float)
+            self.weights.append(w)
+            self.biases.append(b)
 
     def forward(self, X):
         X = np.array(X, dtype=float)
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
 
-        #capa oculta
-        Z1 = X @ self.W1 + self.b1
-        A1 = self.h_act.forward(Z1)
+        activations = [X]
+        linear_inputs = []
 
-        #capa de salida
-        Z2 = A1 @ self.W2 + self.b2
-        A2 = self.o_act.forward(Z2)
+        current_a = X
+        n_layers = len(self.weights)
 
-        # guardamos cosas pa despues "backpropagatio"
-        cache = {
-            "X": X,
-            "Z1": Z1,
-            "A1": A1,
-            "Z2": Z2,
-            "A2": A2,
-        }
+        for i in range(n_layers):
+            z = np.dot(current_a, self.weights[i]) + self.biases[i]
+            linear_inputs.append(z)
+            if i == n_layers - 1:
+                current_a = self.o_act.forward(z)
+            else:
+                current_a = self.h_act.forward(z)
+            activations.append(current_a)
 
-        return A2, cache
+        return current_a, {"activations": activations, "linear_inputs": linear_inputs}
 
     def backward(self, y_true, cache):
-        X = cache["X"]
-        Z1 = cache["Z1"]
-        A1 = cache["A1"]
-        Z2 = cache["Z2"]
-        A2 = cache["A2"]
+        activations = cache["activations"]
+        linear_inputs = cache["linear_inputs"]
+        n_layers = len(self.weights)
+        m = activations[0].shape[0]
+
+        a_last = activations[-1]
+        z_last = linear_inputs[-1]
 
         y_true = np.array(y_true, dtype=float)
         if y_true.ndim == 1:
-            y_true = y_true.reshape(-1, 1)
+            if self.n_outputs == 1:
+                y_true = y_true.reshape(-1, 1)
+            else:
+                y_true = np.eye(self.n_outputs)[y_true.astype(int)]
 
-        m = X.shape[0] #datosd
+        if isinstance(self.loss_fn, BinaryCrossEntropy) and isinstance(self.o_act, Sigmoid):
+            dZ = a_last - y_true
+        elif isinstance(self.loss_fn, CategoricalCrossEntropy) and isinstance(self.o_act, Softmax):
+            dZ = a_last - y_true
+        else:
+            dL_dA = self.loss_fn.derivative(y_true, a_last)
+            dA_dZ = self.o_act.derivative(z_last)
+            dZ = dL_dA * dA_dZ
 
-        #gradiente del loss respecto a la salida
-        dL_dA2 = self.loss_fn.derivative(y_true, A2)
+        grad_w = [None] * n_layers
+        grad_b = [None] * n_layers
 
-        #pasamos por activacion de salida
-        dA2_dZ2 = self.o_act.derivative(Z2)
-        dZ2 = dL_dA2 * dA2_dZ2
+        for i in reversed(range(n_layers)):
+            a_prev = activations[i]
+            grad_w[i] = np.dot(a_prev.T, dZ) / m
+            grad_b[i] = np.sum(dZ, axis=0, keepdims=True) / m
 
-        #gradientes capa 2
-        dW2 = (A1.T @ dZ2) / m
-        db2 = np.sum(dZ2, axis=0, keepdims=True) / m
+            if i > 0:
+                dA_prev = np.dot(dZ, self.weights[i].T)
+                z_prev = linear_inputs[i - 1]
+                dZ = dA_prev * self.h_act.derivative(z_prev)
 
-        #error que baja a la capa oculta
-        dA1 = dZ2 @ self.W2.T
-        dA1_dZ1 = self.h_act.derivative(Z1)
-        dZ1 = dA1 * dA1_dZ1
-
-        #gradientes capa 1
-        dW1 = (X.T @ dZ1) / m
-        db1 = np.sum(dZ1, axis=0, keepdims=True) / m
-
-        #update de pesos
-        self.W2 = self.W2 - self.lr * dW2
-        self.b2 = self.b2 - self.lr * db2
-
-        self.W1 = self.W1 - self.lr * dW1
-        self.b1 = self.b1 - self.lr * db1
+        for i in range(n_layers):
+            self.weights[i] -= self.lr * grad_w[i]
+            self.biases[i] -= self.lr * grad_b[i]
 
     def fit(self, X, y):
         X = np.array(X, dtype=float)
         y = np.array(y, dtype=float)
-
-        if y.ndim == 1:
+        if y.ndim == 1 and self.n_outputs == 1:
             y = y.reshape(-1, 1)
 
+        m = X.shape[0]
+        rng = np.random.default_rng(self.seed)
         self.loss_history_ = []
 
-        for epoca in range(self.epochs):
+        batch_size = self.batch_size if self.batch_size is not None else m
 
-            y_pred, cache = self.forward(X)
+        for epoch in range(self.epochs):
+            indices = rng.permutation(m)
+            X_shuffled = X[indices]
+            y_shuffled = y[indices]
 
-            #calculo de loss
-            loss_value = self.loss_fn.forward(y, y_pred)
-            self.loss_history_.append(float(loss_value))
+            for start_idx in range(0, m, batch_size):
+                end_idx = min(start_idx + batch_size, m)
+                xb = X_shuffled[start_idx:end_idx]
+                yb = y_shuffled[start_idx:end_idx]
 
-            self.backward(y, cache)
+                _, cache = self.forward(xb)
+                self.backward(yb, cache)
 
-            if self.verbose and (epoca % max(1, self.epochs // 10) == 0):
-                print(f"epoca {epoca+1}/{self.epochs} | loss: {loss_value:.6f}")
+            y_pred_full, _ = self.forward(X)
+            epoch_loss = self.loss_fn.forward(y, y_pred_full)
+            self.loss_history_.append(float(epoch_loss))
+
+            if self.verbose and (epoch % max(1, self.epochs // 10) == 0 or epoch == self.epochs - 1):
+                print(f"Epoca {epoch + 1}/{self.epochs} | Loss: {epoch_loss:.6f}")
 
         return self
 
@@ -146,22 +161,13 @@ class MLP:
 
     def predict(self, X, threshold=0.5):
         y_pred = self.predict_proba(X)
-
-        #clasificacion binaria
-        if y_pred.shape[1] == 1:
-            return (y_pred >= threshold).astype(int)
-
-        #multiclass
-        return np.argmax(y_pred, axis=1)
+        if self.n_outputs == 1:
+            return (y_pred >= threshold).astype(int).reshape(-1)
+        return np.argmax(y_pred, axis=-1)
 
     def score(self, X, y):
         y = np.array(y)
-        y_pred = self.predict(X)
-
-        #binario
-        if y_pred.ndim == 2 and y_pred.shape[1] == 1:
-            y_pred = y_pred.reshape(-1)
         if y.ndim != 1:
             y = y.reshape(-1)
-
+        y_pred = self.predict(X)
         return float(np.mean(y_pred == y))
