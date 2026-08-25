@@ -1,8 +1,8 @@
 # NeuroLearnNet 🧠⚡
 
-**NeuroLearnNet** es una biblioteca educativa y práctica para comprender, simular y construir **Redes Neuronales Artificiales desde cero** usando únicamente **Python y NumPy**.
+**NeuroLearnNet** es una biblioteca educativa, práctica y visual para comprender, simular y construir **Redes Neuronales Artificiales desde cero** usando únicamente **Python y NumPy**.
 
-El proyecto abarca desde los fundamentos biológicos de la neurona y el Perceptrón monocapa hasta redes neuronales profundas (*Multilayer Perceptron - MLP*) entrenadas con *Backpropagation* (retropropagación del error).
+El proyecto abarca desde los fundamentos biológicos de la neurona y el Perceptrón monocapa hasta redes neuronales profundas (*Multilayer Perceptron - MLP*) entrenadas con *Backpropagation* (retropropagación del error), complementado con una **interfaz gráfica interactiva de escritorio**.
 
 ---
 
@@ -13,10 +13,12 @@ El proyecto abarca desde los fundamentos biológicos de la neurona y el Perceptr
 4. [Redes Neuronales Multicapa (MLP)](#4-redes-neuronales-multicapa-mlp)
 5. [Algoritmo de Backpropagation](#5-algoritmo-de-backpropagation)
 6. [Funciones de Activación y Pérdida](#6-funciones-de-activación-y-pérdida)
-7. [Estructura del Repositorio](#7-estructura-del-repositorio)
-8. [Instalación y Requisitos](#8-instalación-y-requisitos)
-9. [Simulaciones y Experimentos](#9-simulaciones-y-experimentos)
-10. [Ejecución de Pruebas Unitarias](#10-ejecución-de-pruebas-unitarias)
+7. [Interfaz Gráfica Interactiva (NeuroLearnNet Studio)](#7-interfaz-gráfica-interactiva-neurolearnnet-studio)
+8. [Estructura del Repositorio](#8-estructura-del-repositorio)
+9. [Instalación y Requisitos](#9-instalación-y-requisitos)
+10. [Simulaciones y Experimentos](#10-simulaciones-y-experimentos)
+11. [Carga de Datasets Propios (CSV o Clics)](#11-carga-de-datasets-propios-csv-o-clics)
+12. [Ejecución de Pruebas Unitarias](#12-ejecución-de-pruebas-unitarias)
 
 ---
 
@@ -141,10 +143,39 @@ El algoritmo de retropropagación del error (*Backpropagation*) utiliza la **Reg
 
 ---
 
-## 7. Estructura del Repositorio
+## 7. Interfaz Gráfica Interactiva (NeuroLearnNet Studio)
+
+El proyecto cuenta con una aplicación gráfica de escritorio que permite experimentar de forma visual sin escribir código:
+
+```bash
+python app.py
+```
+
+### Funcionalidades de la Interfaz:
+1. **⚡ Simulador de Neurona:**
+   * Modifica en tiempo real entradas ($x_1, x_2$), pesos ($w_1, w_2$) y sesgo ($b$) mediante controles deslizantes (*sliders*).
+   * Visualiza el diagrama neuronal interactivo y la posición de disparo en la curva de activación.
+2. **📐 Entrenador de Perceptrón:**
+   * Entrena compuertas lógicas (AND, OR, NAND) o dibuja tus propios puntos en el plano 2D haciendo clic.
+   * Visualiza la recta separadora y la disminución de errores por época.
+3. **🧠 Entrenador de MLP y Datasets Personalizados:**
+   * Configura libremente la arquitectura de capas ocultas (ejemplo: `32, 16, 8`), funciones de activación, tasa de aprendizaje y épocas.
+   * Entrena sobre datasets clásicos (XOR, Círculos, Lunas, Espirales) o importa tus propios archivos `.csv`.
+   * Visualiza el mapa de calor de la frontera de decisión no lineal y la curva de pérdida (*loss*).
+
+---
+
+## 8. Estructura del Repositorio
 
 ```text
 NeuroLearnNet/
+├── app.py                    # Aplicacion grafica de escritorio
+├── gui/
+│   ├── __init__.py           # Exportacion de componentes graficos
+│   ├── data_loader.py        # Importador y exportador de archivos CSV
+│   ├── tab_neuron.py         # Pestana 1: Simulador interactivo de neurona
+│   ├── tab_perceptron.py     # Pestana 2: Entrenador visual de Perceptron
+│   └── tab_mlp.py            # Pestana 3: Entrenador visual de MLP
 ├── models/
 │   ├── __init__.py           # Exportacion de modelos
 │   ├── perceptron.py         # Implementacion del Perceptron Simple
@@ -156,7 +187,7 @@ NeuroLearnNet/
 │   ├── datasets.py           # Generadores de datasets sinteticos
 │   └── visualization.py      # Graficadores de fronteras y curvas
 ├── experiments/
-│   ├── simulate_neuron.py    # Simulacion individual de neurona
+│   ├── simulate_neuron.py    # Simulacion en consola de neurona
 │   ├── train_perceptron.py   # Entrenamiento en compuertas logicas
 │   ├── train_xor.py          # Comparativa Perceptron vs MLP en XOR
 │   └── train_mlp.py          # Entrenamiento no lineal y multiclase
@@ -172,7 +203,7 @@ NeuroLearnNet/
 
 ---
 
-## 8. Instalación y Requisitos
+## 9. Instalación y Requisitos
 
 Requiere Python 3.8 o superior.
 
@@ -184,41 +215,53 @@ pip install -r requirements.txt
 
 ---
 
-## 9. Simulaciones y Experimentos
+## 10. Simulaciones y Experimentos
 
-Puedes ejecutar cualquiera de las siguientes simulaciones didácticas:
+También puedes ejecutar los experimentos por línea de comandos:
 
 ### 1. Simular una Neurona Individual
-Calcula la respuesta de una neurona biológica vs artificial con diferentes estímulos y funciones de activación:
 ```bash
 python experiments/simulate_neuron.py
 ```
 
 ### 2. Entrenar Perceptrón en Compuertas Lógicas
-Entrena el Perceptrón en AND, OR, NAND y muestra la convergencia y pesos:
 ```bash
 python experiments/train_perceptron.py
 ```
 
 ### 3. Resolver el Problema XOR (Perceptrón vs MLP)
-Comprueba empíricamente por qué el perceptrón monocapa no puede resolver XOR y cómo el MLP alcanza el 100% de precisión:
 ```bash
 python experiments/train_xor.py
 ```
 
 ### 4. Entrenar MLP en Patrones No Lineales y Multiclase
-Entrena redes multicapa en círculos concéntricos, dos lunas (*Two Moons*) y espirales multiclase:
 ```bash
 python experiments/train_mlp.py
 ```
 
-*Todos los experimentos guardan automáticamente gráficos visuales en la carpeta `assets/`.*
+---
+
+## 11. Carga de Datasets Propios (CSV o Clics)
+
+La aplicación soporta entrenar redes neuronales con tus propios datos:
+
+### Formato de Archivo CSV
+Crea un archivo `.csv` donde las primeras columnas sean las características numéricas y la última columna sea la etiqueta de clase (`0`, `1`, `2`, ...):
+
+```csv
+x1,x2,label
+1.25,-0.45,0
+-0.80,1.10,1
+0.50,0.90,1
+```
+
+En la interfaz gráfica, selecciona **Cargar Archivo CSV** y haz clic en **Seleccionar CSV...**. También puedes presionar **Generar Ejemplo CSV** para obtener una plantilla lista para usar.
 
 ---
 
-## 10. Ejecución de Pruebas Unitarias
+## 12. Ejecución de Pruebas Unitarias
 
-Para verificar la consistencia matemática y el correcto funcionamiento de todos los módulos:
+Para verificar la consistencia matemática de todo el proyecto:
 
 ```bash
 pytest
